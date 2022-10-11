@@ -7,6 +7,7 @@
 set -eo pipefail
 set -o errtrace
 set -o nounset
+set -x
 
 BUILD_DIR=$1
 CACHE_DIR=$2
@@ -36,7 +37,8 @@ export_env_dir $ENV_DIR
 mkdir -p $CACHE_DIR/bin
 
 topic "Downloading proot"
-download_and_install $CACHE_DIR $BUILD_DIR proot https://github.com/proot-me/proot-static-build/blob/master/static/proot-x86_64?raw=true
+download_and_install $CACHE_DIR $BUILD_DIR proot https://github.com/proot-me/proot/releases/download/v5.3.0/proot-v5.3.0-x86_64-static
+download_and_install $CACHE_DIR $BUILD_DIR nix-portable https://github.com/DavHau/nix-portable/releases/download/v009/nix-portable
 
 # add executables to path
 export PATH=$BUILD_DIR/bin:$PATH
@@ -51,9 +53,7 @@ export REAL_APP_DIR=${REAL_APP_DIR:-/app}
 
   mkdir -p $CACHE_DIR/nix-mnt
   cd $CACHE_DIR/nix-mnt
-	set -x
   fetch nix-${NIX_VERSION}.tar.xz https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-x86_64-linux.tar.xz
-	set +x
   tar xJf nix-${NIX_VERSION}.tar.xz
   echo "Done extracting." | indent
   rm nix-${NIX_VERSION}.tar.xz
@@ -63,6 +63,16 @@ topic "Copying nix to $NIX_ROOT_PATH"
 mkdir -p $NIX_ROOT_PATH
 rsync -av $NIX_ROOT_CACHE_PATH/ $NIX_ROOT_PATH
 
+
+pwd
+echo "user: $(whoami)"
+echo "home: $HOME"
+echo "cache: $CACHE_DIR"
+echo "buikld: $BUILD_DIR"
+touch test
+exit 1
+
+NP_DEBUG=1 $BUILD_DIR/bin/nix-portable nix-shell -p bash --run "echo hello"
 $BUILD_DIR/bin/proot -b $NIX_ROOT_PATH:/nix bash $DIR/nix-install-proot $BUILD_DIR
 
 topic "Cleaning up $BUILD_DIR"
